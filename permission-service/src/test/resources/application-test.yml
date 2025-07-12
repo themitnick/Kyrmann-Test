@@ -1,0 +1,53 @@
+# Configuration de test pour Permission Service
+spring:
+  profiles:
+    active: test
+
+  # Base de données H2 en mémoire pour les tests
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # Configuration JPA pour les tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+
+  # Désactiver Flyway pour les tests
+  flyway:
+    enabled: false
+
+  # Désactiver H2 console pour les tests
+  h2:
+    console:
+      enabled: false
+
+# Désactiver Eureka pour les tests
+eureka:
+  client:
+    enabled: false
+    fetch-registry: false
+    register-with-eureka: false
+
+# Désactiver le tracing pour les tests
+management:
+  tracing:
+    sampling:
+      probability: 0.0
+  zipkin:
+    tracing:
+      endpoint: ""
+
+# Logging pour les tests
+logging:
+  level:
+    com.assure: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
