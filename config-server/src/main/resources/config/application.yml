@@ -1,0 +1,46 @@
+# Configuration commune à tous les services
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+
+# Configuration de la base de données PostgreSQL (commune)
+spring:
+  datasource:
+    url: jdbc:postgresql://192.168.1.102:5432/assurePlusBD
+    username: kse
+    password: "@Kse12345"
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+# Configuration du logging
+logging:
+  level:
+    com.assure: INFO
+    org.springframework.cloud: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Configuration de gestion des erreurs
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

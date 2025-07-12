@@ -1,0 +1,201 @@
+version: "3.8"
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: assure-postgres
+    environment:
+      POSTGRES_DB: assurePlusBD
+      POSTGRES_USER: kse
+      POSTGRES_PASSWORD: "@Kse12345"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - assure-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kse -d assurePlusBD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service de découverte Eureka
+  discovery:
+    build:
+      context: ./discovery
+      dockerfile: Dockerfile
+    container_name: assure-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - assure-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Serveur de configuration
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: assure-config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - assure-network
+    depends_on:
+      - discovery
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service de permissions
+  permission-service:
+    build:
+      context: ./permission-service
+      dockerfile: Dockerfile
+    container_name: assure-permission-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/assurePlusBD
+      SPRING_DATASOURCE_USERNAME: kse
+      SPRING_DATASOURCE_PASSWORD: "@Kse12345"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: 1.0
+    networks:
+      - assure-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Service de rôles
+  role-service:
+    build:
+      context: ./role-service
+      dockerfile: Dockerfile
+    container_name: assure-role-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/assurePlusBD
+      SPRING_DATASOURCE_USERNAME: kse
+      SPRING_DATASOURCE_PASSWORD: "@Kse12345"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: 1.0
+    networks:
+      - assure-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Service utilisateurs
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: assure-user-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/assurePlusBD
+      SPRING_DATASOURCE_USERNAME: kse
+      SPRING_DATASOURCE_PASSWORD: "@Kse12345"
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: 1.0
+    networks:
+      - assure-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Gateway
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: assure-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: 1.0
+    networks:
+      - assure-network
+    depends_on:
+      discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      permission-service:
+        condition: service_started
+      role-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # Zipkin pour le tracing distribué
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: assure-zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - assure-network
+    environment:
+      - STORAGE_TYPE=mem
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9411/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+
+networks:
+  assure-network:
+    driver: bridge

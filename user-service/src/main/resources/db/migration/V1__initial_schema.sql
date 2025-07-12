@@ -1,0 +1,47 @@
+-- V1__initial_schema.sql
+CREATE TABLE utilisateur (
+    utilisateur_id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    deleted_by VARCHAR(255),
+    actif BOOLEAN NOT NULL DEFAULT TRUE,
+    activate_at TIMESTAMP WITHOUT TIME ZONE,
+    activate_by VARCHAR(255),
+    identifiant VARCHAR(64) NOT NULL,
+    est_verifie BOOLEAN NOT NULL DEFAULT FALSE,
+    email VARCHAR(256),
+    telephone VARCHAR(64),
+    langue_preferee VARCHAR(10),
+    date_derniere_connexion TIMESTAMP WITHOUT TIME ZONE,
+    origine_connexion VARCHAR(255),
+    last_login_ip VARCHAR(255),
+    canal_par_defaut VARCHAR(255),
+    role_id UUID NOT NULL,
+    CONSTRAINT pk_utilisateur PRIMARY KEY (utilisateur_id),
+    CONSTRAINT fk_utilisateur_role FOREIGN KEY (role_id) REFERENCES role(role_id),
+    CONSTRAINT uc_utilisateur_email UNIQUE (email),
+    CONSTRAINT uc_utilisateur_telephone UNIQUE (telephone),
+    CONSTRAINT uc_utilisateur_identifiant UNIQUE (identifiant)
+);
+
+CREATE TABLE utilisateurpermission (
+    utilisateur_id UUID NOT NULL,
+    permission_id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at TIMESTAMP WITHOUT TIME ZONE,
+    deleted_by VARCHAR(255),
+    actif BOOLEAN NOT NULL DEFAULT TRUE,
+    activate_at TIMESTAMP WITHOUT TIME ZONE,
+    activate_by VARCHAR(255),
+    CONSTRAINT pk_utilisateurpermission PRIMARY KEY (utilisateur_id, permission_id),
+    CONSTRAINT fk_up_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(utilisateur_id),
+    CONSTRAINT fk_up_permission FOREIGN KEY (permission_id) REFERENCES permission(permission_id)
+);
