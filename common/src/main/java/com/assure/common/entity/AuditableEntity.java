@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @MappedSuperclass
 public abstract class AuditableEntity {
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "created_by")
@@ -18,7 +18,7 @@ public abstract class AuditableEntity {
     @Column(name = "updated_by")
     private String updatedBy;
 
-    @Column(name = "deleted", nullable = false)
+    @Column(name = "deleted")
     private Boolean deleted = false;
 
     @Column(name = "deleted_at")
@@ -27,7 +27,7 @@ public abstract class AuditableEntity {
     @Column(name = "deleted_by")
     private String deletedBy;
 
-    @Column(name = "actif", nullable = false)
+    @Column(name = "actif")
     private Boolean actif = true;
 
     @Column(name = "activate_at")
